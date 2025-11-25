@@ -1,4 +1,4 @@
-= NRK Former solver
+# NRK Former solver
 
 Prøver finne beste løysinga på utfordringane i https://nrk.no/spill/former
 
