@@ -90,6 +90,13 @@ class Brett(object):
         """Fjern enkelt-punkt, ikkje dei rundt"""
         self.brett[radnr][kolonnenr] = None
 
+    def er_tomt(self) -> bool:
+        for rad in range(self.rader):
+            for kol in range(self.kolonner):
+                if self.get(kol, rad) is not None:
+                    return False
+        return True
+
     def fjern(self, kolnr, radnr):
         """Fjern ei form frå brettet, og fjern like former rundt.
 
