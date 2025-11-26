@@ -31,11 +31,48 @@ class Form(enum.Enum):
 
 
 class Solver(object):
-    pass
+    """Algoritme(r) for å løyse brett"""
+
+    def __init__(self):
+        self.brett = Brett(lag_tilfeldig_brett())
+
+    def solve(self):
+        """Løys eitt brett, med enkel algoritme.
+
+        Returner loggen over kva som vart fjerna.
+
+        """
+        logg = []
+        print("Løyser denne!")
+        print_brett(self.brett)
+        while not self.brett.er_tomt():
+            kol, rad, verdi = self.finn_form()
+            logg.append((kol, rad, verdi))
+            self.brett.fjern(kol, rad)
+            self.brett.graviter()
+
+        print("Resultat: {} steg".format(len(logg)))
+        for line in logg:
+            print(line)
+
+    def finn_form(self):
+        """Finn første form på brettet og returner
+
+        Returnerer:
+            (kolonnenr, radnr, verdi)
+
+        """
+        for kol in range(self.brett.kolonner):
+            for rad in range(self.brett.rader):
+                verdi = self.brett.get(kol, rad)
+                if verdi is not None:
+                    return kol, rad, verdi
 
 
 def print_brett(brett):
     """Vis lett lesbart brett"""
+    if type(brett) is Brett:
+        brett = brett.brett
     for rad in brett:
         for kol in rad:
             if kol is None:
@@ -62,33 +99,20 @@ class Brett(object):
     rader = 9
     kolonner = 7
 
-    def __init__(self, oppstartsdata=None):
-        if oppstartsdata:
-            self.brett = oppstartsdata
-        else:
-            self.brett = self.tomt_brett()
+    def __init__(self, data):
+        assert len(data) == self.rader
+        assert len(data[0]) == self.kolonner
+        self.brett = data
 
-    def tomt_brett(self):
-        ret = []
-        for i in range(self.rader):
-            ret.append([None] * self.kolonner)
-
-        print_brett(ret)
-        return ret
-
-    def get(self, kolonnenr, radnr) -> Form:
-        assert kolonnenr >= 0
+    def get(self, kolnr, radnr) -> Form:
+        assert kolnr >= 0
         assert radnr >= 0
-        return self.brett[radnr][kolonnenr]
+        return self.brett[radnr][kolnr]
 
-    def set(self, kolonnenr, radnr, verdi: Form):
-        assert kolonnenr >= 0
+    def set(self, kolnr, radnr, verdi: Form):
+        assert kolnr >= 0
         assert radnr >= 0
-        self.brett[radnr][kolonnenr] = verdi
-
-    def _fjern(self, kolonnenr, radnr):
-        """Fjern enkelt-punkt, ikkje dei rundt"""
-        self.brett[radnr][kolonnenr] = None
+        self.brett[radnr][kolnr] = verdi
 
     def er_tomt(self) -> bool:
         for rad in range(self.rader):
@@ -97,7 +121,11 @@ class Brett(object):
                     return False
         return True
 
-    def fjern(self, kolnr, radnr):
+    def _fjern(self, kolnr, radnr):
+        """Fjern enkelt-punkt, ikkje dei rundt"""
+        self.brett[radnr][kolnr] = None
+
+    def fjern(self, kolnr, radnr, _fra=None):
         """Fjern ei form frå brettet, og fjern like former rundt.
 
         Går gjennom rekursivt.
@@ -107,20 +135,25 @@ class Brett(object):
         self._fjern(kolnr, radnr)
 
         # Sjå oppover:
-        if radnr > 0 and self.get(kolnr, radnr - 1) == form:
-            self.fjern(kolnr, radnr - 1)
+        if _fra != (kolnr, radnr - 1):
+            if radnr > 0 and self.get(kolnr, radnr - 1) == form:
+                self.fjern(kolnr, radnr - 1, _fra=(kolnr, radnr))
 
         # Sjå nedover
-        if radnr < self.rader and self.get(kolnr, radnr + 1) == form:
-            self.fjern(kolnr, radnr + 1)
+        if _fra != (kolnr, radnr + 1):
+            if radnr + 1 < self.rader and self.get(kolnr, radnr + 1) == form:
+                self.fjern(kolnr, radnr + 1, _fra=(kolnr, radnr))
 
         # Sjå til venstre
-        if kolnr > 0 and self.get(kolnr - 1, radnr) == form:
-            self.fjern(kolnr - 1, radnr)
+        if _fra != (kolnr - 1, radnr):
+            if kolnr > 0 and self.get(kolnr - 1, radnr) == form:
+                self.fjern(kolnr - 1, radnr, _fra=(kolnr, radnr))
 
         # Sjå til høgre
-        if kolnr < self.kolonner and self.get(kolnr + 1, radnr) == form:
-            self.fjern(kolnr + 1, radnr)
+        if _fra != (kolnr + 1, radnr):
+            if kolnr + 1 < self.kolonner:
+                if self.get(kolnr + 1, radnr) == form:
+                    self.fjern(kolnr + 1, radnr, _fra=(kolnr, radnr))
 
     def graviter(self):
         """Gå gjennom kolonnene og flytt former nedover om det er tomme"""
