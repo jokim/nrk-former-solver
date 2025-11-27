@@ -4,7 +4,7 @@ from pprint import pprint
 
 from nrk_former_solver import Brett
 from nrk_former_solver import Form
-from nrk_former_solver import SimpleSolver, LinearSolver # noqa
+from nrk_former_solver import SimpleSolver, LinearSolver, MaxFirstSolver # noqa
 
 O = Form.ORANGE # noqa
 G = Form.GRØN
@@ -30,7 +30,8 @@ brett = Brett(brett)
 
 # s = SimpleSolver(brett)
 # s.solve()
-s = LinearSolver(brett)
+# s = LinearSolver(brett)
+s = MaxFirstSolver(brett)
 try:
     s.solve()
 except KeyboardInterrupt:
