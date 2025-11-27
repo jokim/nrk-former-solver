@@ -31,8 +31,15 @@ class Form(enum.Enum):
     RAUD = 4
 
 
-class Solver(object):
+DEBUG: bool = False
 
+
+def debug(output, *args):
+    if DEBUG:
+        print(output % args)
+
+
+class Solver(object):
     def __init__(self, brett=None):
         self.brett = brett
         self.counter: int = 0
@@ -150,7 +157,7 @@ class MaxFirstSolver(Solver):
 
         starttid = time.time()
 
-        for (kol, rad, _) in self.get_pos_of_largest_shape():
+        for (kol, rad, _) in self.get_pos_of_largest_shape(self.brett):
             b = Brett(copy_brett(self.brett))
             print(f"Dykker ned frå ({kol}, {rad})…")
             self.solve_fjern(b, kol, rad, [])
@@ -160,7 +167,7 @@ class MaxFirstSolver(Solver):
         from pprint import pprint
         pprint(self.best_log)
 
-    def get_pos_of_largest_shape(self):
+    def get_pos_of_largest_shape(self, brett):
         """Returner liste av `(kol, rad)` utfrå største grupperingane.
 
         Med grupperinga meinast former som er naboar med like former, slik at å
@@ -168,12 +175,16 @@ class MaxFirstSolver(Solver):
 
         """
         ret = []
-        for rad in range(self.brett.rader):
-            for kol in range(self.brett.kolonner):
-                # print(f"Dykker ned frå ({kol}, {rad})…")
-                naboer = self.brett.tell_naboer(kol, rad)
-                if naboer > 0:
-                    ret.append((kol, rad, naboer))
+        seen = set()
+        for rad in range(brett.rader):
+            for kol in range(brett.kolonner):
+                if (kol, rad) in seen:
+                    continue
+                naboer = brett.get_naboer(kol, rad)
+                if len(naboer) > 0:
+                    ret.append((kol, rad, len(naboer)))
+                for nabo in naboer:
+                    seen.add((nabo[0], nabo[1]))
         return sorted(ret, reverse=True, key=lambda x: x[2])
 
     def solve_fjern(self, brett, kol, rad, steps):
@@ -184,20 +195,23 @@ class MaxFirstSolver(Solver):
 
         """
         if len(steps) >= self.best:
+            debug(" Gir opp, for mange steg")
             return
         self.counter += 1
         if self.counter % 1000000 == 0:
             print(f"{self.counter} runs")
-        # print(f" solve_fjern at ({kol}, {rad}), depth=%d, uid={uid}" %
-        #                                           len(steps))
-        # print_brett(brett)
-        input()
+        if DEBUG:
+            debug(f"solve_fjern({kol}, {rad}), steg=%d", len(steps))
+            print_brett(brett)
+            input()
+
         verdi = brett.get(kol, rad)
         steps = steps.copy() + [(kol, rad, verdi)]
         brett.fjern(kol, rad)
         brett.graviter()
 
         if brett.er_tomt():
+            debug(" tomt!")
             if len(steps) < self.best:
                 print("Tomt! Steg: %d" % len(steps))
                 self.best = len(steps)
@@ -205,9 +219,11 @@ class MaxFirstSolver(Solver):
                 from pprint import pprint
                 pprint(steps)
         else:
-            for (kol, rad, _) in self.get_pos_of_largest_shape():
+            for (kol, rad, _) in self.get_pos_of_largest_shape(brett):
+                debug(" sjekk shape i (%d, %d)", kol, rad)
                 verdi = brett.get(kol, rad)
                 if not verdi:
+                    debug(" felt tomt, skipper")
                     continue
                 b = Brett(copy_brett(brett))
                 self.solve_fjern(b, kol, rad, steps)
@@ -360,23 +376,23 @@ class Brett(object):
         # Sjå oppover:
         if (kolnr, radnr - 1) not in sti:
             if radnr > 0 and self.get(kolnr, radnr - 1) == form:
-                ret += self.tell_naboer(kolnr, radnr - 1, sti)
+                ret += self.get_naboer(kolnr, radnr - 1, sti)
 
         # Sjå nedover
         if (kolnr, radnr + 1) not in sti:
             if radnr + 1 < self.rader and self.get(kolnr, radnr + 1) == form:
-                ret += self.tell_naboer(kolnr, radnr + 1, sti)
+                ret += self.get_naboer(kolnr, radnr + 1, sti)
 
         # Sjå til venstre
         if (kolnr - 1, radnr) not in sti:
             if kolnr > 0 and self.get(kolnr - 1, radnr) == form:
-                ret += self.tell_naboer(kolnr - 1, radnr, sti)
+                ret += self.get_naboer(kolnr - 1, radnr, sti)
 
         # Sjå til høgre
         if (kolnr + 1, radnr) not in sti:
             if kolnr + 1 < self.kolonner:
                 if self.get(kolnr + 1, radnr) == form:
-                    ret += self.tell_naboer(kolnr + 1, radnr, sti)
+                    ret += self.get_naboer(kolnr + 1, radnr, sti)
 
         return sti + ret
 
