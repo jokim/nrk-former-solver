@@ -1,17 +1,33 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import nrk_former_solver
-from nrk_former_solver import Solver, print_brett
+from nrk_former_solver import Brett
+from nrk_former_solver import Form
+from nrk_former_solver import SimpleSolver, LinearSolver # noqa
+
+O = Form.ORANGE # noqa
+G = Form.GRØN
+B = Form.BLÅ
+R = Form.RAUD
+
+# The challenge from 27. nov 2025:
+brett = [
+    [O, R, R, B, B, R, O],
+    [R, R, O, O, G, B, G],
+    [G, R, R, O, R, R, G],
+    [R, R, G, G, G, B, G],
+    [O, G, B, B, G, O, O],
+    [R, G, O, G, B, G, O],
+    [R, R, B, O, R, O, B],
+    [O, O, R, B, G, R, O],
+    [G, B, O, O, G, R, R],
+]
 
 print("NRK Former - demo/test:")
 
-#tilf = nrk_former_solver.lag_tilfeldig_brett()
-#print_brett(tilf)
-#b = nrk_former_solver.Brett(tilf)
-#b.fjern(2, 2)
-#print_brett(b.brett)
-#b.graviter()
-#print_brett(b.brett)
-s = Solver()
+brett = Brett(brett)
+
+# s = SimpleSolver(brett)
+# s.solve()
+s = LinearSolver(brett)
 s.solve()

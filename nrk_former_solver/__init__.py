@@ -21,6 +21,7 @@ Formene, gjer det enkelt med str i starten:
 
 import enum
 import random
+import time
 
 
 class Form(enum.Enum):
@@ -31,20 +32,23 @@ class Form(enum.Enum):
 
 
 class Solver(object):
-    """Algoritme(r) for å løyse brett"""
 
-    def __init__(self):
-        self.brett = Brett(lag_tilfeldig_brett())
+    def __init__(self, brett=None):
+        self.brett = brett
+        if not self.brett:
+            print("Lager tilfeldig brett")
+            self.brett = Brett(lag_tilfeldig_brett())
+
+
+class SimpleSolver(Solver):
+    """Løys eit brett berre ein gang - mest ein test"""
 
     def solve(self):
-        """Løys eitt brett, med enkel algoritme.
-
-        Returner loggen over kva som vart fjerna.
-
-        """
+        """Løys brettet ein gang og print resultat"""
         logg = []
         print("Løyser denne!")
         print_brett(self.brett)
+
         while not self.brett.er_tomt():
             kol, rad, verdi = self.finn_form()
             logg.append((kol, rad, verdi))
@@ -69,6 +73,67 @@ class Solver(object):
                     return kol, rad, verdi
 
 
+class LinearSolver(Solver):
+    """Brute force - løys alle muligheter og print løysinga med færrast steg"""
+
+    def solve(self):
+        print("Skal løyse denne:")
+        print_brett(self.brett)
+
+        self.best: int = self.brett.rader * self.brett.kolonner + 1
+        self.best_log = []
+        self.counter: int = 0
+
+        starttid = time.time()
+
+        for rad in range(self.brett.rader):
+            for kol in range(self.brett.kolonner):
+                b = Brett(copy_brett(self.brett))
+                print(f"Dykker ned frå ({kol}, {rad})…")
+                self.solve_fjern(b, kol, rad, [])
+
+        print("Ferdig, etter %.3f sekund" % (time.time() - starttid))
+        print(f"Beste resultat var {self.best} steg:")
+        from pprint import pprint
+        pprint(self.best_log)
+
+    def solve_fjern(self, brett, kol, rad, steps):
+        """Løys brettet rekursivt.
+
+        Stopp når brettet er tomt eller du har brukt fleire steg enn noverande
+        rekord.
+
+        """
+        if len(steps) >= self.best:
+            return
+        self.counter += 1
+        if self.counter % 1000000 == 0:
+            print(f"{self.counter} runs")
+        # print(f" solve_fjern at ({kol}, {rad}), depth=%d, uid={uid}" %
+        #                                           len(steps))
+        # print_brett(brett)
+        verdi = brett.get(kol, rad)
+        steps = steps.copy() + [(kol, rad, verdi)]
+        brett.fjern(kol, rad)
+        brett.graviter()
+
+        if brett.er_tomt():
+            if len(steps) < self.best:
+                print("Tomt! Steg: %d" % len(steps))
+                self.best = len(steps)
+                self.best_log = steps
+                from pprint import pprint
+                pprint(steps)
+        else:
+            for rad in range(brett.rader):
+                for kol in range(brett.kolonner):
+                    verdi = brett.get(kol, rad)
+                    if not verdi:
+                        continue
+                    b = Brett(copy_brett(brett))
+                    self.solve_fjern(b, kol, rad, steps)
+
+
 def print_brett(brett):
     """Vis lett lesbart brett"""
     if type(brett) is Brett:
@@ -81,6 +146,16 @@ def print_brett(brett):
                 print(f"{kol.name:^6}", end=" ")
         print()
     print()
+
+
+def copy_brett(brett):
+    """Deeper copy av eit brett"""
+    if isinstance(brett, Brett):
+        brett = brett.brett
+    ret = []
+    for b in brett:
+        ret.append(b.copy())
+    return ret
 
 
 def lag_tilfeldig_brett():
@@ -113,6 +188,15 @@ class Brett(object):
         assert kolnr >= 0
         assert radnr >= 0
         self.brett[radnr][kolnr] = verdi
+
+    def count(self) -> int:
+        """Returner antal former på brettet"""
+        ret: int = 0
+        for rad in self.brett:
+            for kol in rad:
+                if kol is not None:
+                    ret += 1
+        return ret
 
     def er_tomt(self) -> bool:
         for rad in range(self.rader):
