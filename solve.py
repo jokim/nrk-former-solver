@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
+from pprint import pprint
 
 from nrk_former_solver import Brett
 from nrk_former_solver import Form
@@ -30,4 +31,12 @@ brett = Brett(brett)
 # s = SimpleSolver(brett)
 # s.solve()
 s = LinearSolver(brett)
-s.solve()
+try:
+    s.solve()
+except KeyboardInterrupt:
+    print("Bruker avbraut")
+
+print("Resultat:")
+print("Antal runder: %d" % s.counter)
+print("Beste løysing funne var på %d steg:" % s.best)
+pprint(s.best_log)
