@@ -20,6 +20,7 @@ Formene, gjer det enkelt med str i starten:
 """
 
 import enum
+import math
 import random
 import time
 
@@ -152,17 +153,22 @@ class MaxFirstSolver(Solver):
         print("Skal løyse denne:")
         print_brett(self.brett)
 
+        self.max_solutions = math.factorial(self.brett.rader *
+                                            self.brett.kolonner)
+        print("Maks mulige løysingar: {:g}".format(self.max_solutions))
+        print()
+
         self.best: int = self.brett.rader * self.brett.kolonner + 1
         self.best_log = []
 
-        starttid = time.time()
+        self.starttid = time.time()
 
         for (kol, rad, _) in self.get_pos_of_largest_shape(self.brett):
             b = Brett(copy_brett(self.brett))
             print(f"Dykker ned frå ({kol}, {rad})…")
-            self.solve_fjern(b, kol, rad, [])
+            self.solve_fjern(b, kol, rad, ())
 
-        print("Ferdig, etter %.3f sekund" % (time.time() - starttid))
+        print("Ferdig, etter %.3f sekund" % (time.time() - self.starttid))
         print(f"Beste resultat var {self.best} steg:")
         from pprint import pprint
         pprint(self.best_log)
@@ -187,6 +193,16 @@ class MaxFirstSolver(Solver):
                     seen.add((nabo[0], nabo[1]))
         return sorted(ret, reverse=True, key=lambda x: x[2])
 
+    def heartbeat(self):
+        """Print status"""
+        brukttid = time.time() - self.starttid
+        print(
+            f"{self.counter} løysingar (%.6f%%) - %d l/sek" % (
+                  (100 * self.counter / self.max_solutions),
+                  self.counter / brukttid,
+            )
+        )
+
     def solve_fjern(self, brett, kol, rad, steps):
         """Løys brettet rekursivt, men start med største formene først.
 
@@ -196,24 +212,26 @@ class MaxFirstSolver(Solver):
         """
         if len(steps) >= self.best:
             debug(" Gir opp, for mange steg")
+            # Dette blir ikkje korrekt, men eit anslag
+            self.counter += 1
             return
-        self.counter += 1
-        if self.counter % 1000000 == 0:
-            print(f"{self.counter} runs")
+        if self.counter % 100000 == 0:
+            self.heartbeat()
         if DEBUG:
             debug(f"solve_fjern({kol}, {rad}), steg=%d", len(steps))
             print_brett(brett)
             input()
 
         verdi = brett.get(kol, rad)
-        steps = steps.copy() + [(kol, rad, verdi)]
+        steps = steps + ((kol, rad, verdi),)
         brett.fjern(kol, rad)
         brett.graviter()
 
         if brett.er_tomt():
+            self.counter += 1
             debug(" tomt!")
             if len(steps) < self.best:
-                print("Tomt! Steg: %d" % len(steps))
+                print("Ny beste: %d steg" % len(steps))
                 self.best = len(steps)
                 self.best_log = steps
                 from pprint import pprint
