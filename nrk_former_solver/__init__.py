@@ -163,6 +163,11 @@ class MaxFirstSolver(Solver):
 
         self.starttid = time.time()
 
+        # Oversikt over brett som er besøkt, og kor mange steg for å komme dit.
+        # Gjer at kan skippe dersom du treff på eit brett og har fleire steg
+        # (sidan du då veit at du ikkje klarer slå førre gjennomgang)
+        self.besokt = {}
+
         for (kol, rad, _) in self.get_pos_of_largest_shape(self.brett):
             b = Brett(copy_brett(self.brett))
             print(f"Dykker ned frå ({kol}, {rad})…")
@@ -215,6 +220,16 @@ class MaxFirstSolver(Solver):
             # Dette blir ikkje korrekt, men eit anslag
             self.counter += 1
             return
+        brett_tuple = brett.get_hash_base()
+        if self.besokt.get(brett_tuple, 9999) < len(steps):
+            self.counter += 1
+            if DEBUG:
+                print(f"solve_fjern({kol}, {rad}), steg=%d" % len(steps))
+                print(" Gir opp, har vore her før, og med færre steg")
+                print_brett(brett)
+            return
+        self.besokt[brett_tuple] = len(steps)
+
         if self.counter % 100000 == 0:
             self.heartbeat()
         if DEBUG:
@@ -288,8 +303,8 @@ class Brett(object):
     kolonner = 7
 
     def __init__(self, data):
-        assert len(data) == self.rader
-        assert len(data[0]) == self.kolonner
+        # assert len(data) == self.rader
+        # assert len(data[0]) == self.kolonner
         self.brett = data
 
     def get(self, kolnr, radnr) -> Form:
@@ -432,3 +447,7 @@ class Brett(object):
                             if verdi:
                                 movement = True
                             self._fjern(kol, rad - 1)
+
+    def get_hash_base(self):
+        """Returner tuple som kan brukast som hash for set og dict"""
+        return tuple(tuple(r) for r in self.brett)
