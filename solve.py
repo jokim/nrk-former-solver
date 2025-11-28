@@ -11,17 +11,17 @@ G = Form.GRØN
 B = Form.BLÅ
 R = Form.RAUD
 
-# The challenge from 27. nov 2025:
+# The challenge from 28. nov 2025:
 brett = [
-    [O, R, R, B, B, R, O],
-    [R, R, O, O, G, B, G],
-    [G, R, R, O, R, R, G],
-    [R, R, G, G, G, B, G],
-    [O, G, B, B, G, O, O],
-    [R, G, O, G, B, G, O],
-    [R, R, B, O, R, O, B],
-    [O, O, R, B, G, R, O],
-    [G, B, O, O, G, R, R],
+    [O, R, B, O, O, R, B],
+    [B, O, O, O, R, O, G],
+    [O, R, G, R, B, G, B],
+    [B, G, O, B, O, R, G],
+    [G, R, R, B, B, R, G],
+    [G, R, R, R, O, B, B],
+    [O, R, R, O, R, O, B],
+    [R, G, G, O, R, O, B],
+    [B, G, R, R, B, B, R],
 ]
 
 print("NRK Former - demo/test:")
